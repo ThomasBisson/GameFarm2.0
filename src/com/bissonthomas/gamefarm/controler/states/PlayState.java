@@ -3,6 +3,7 @@ package com.bissonthomas.gamefarm.controler.states;
 import com.bissonthomas.gamefarm.controler.StateManager;
 import com.bissonthomas.gamefarm.model.*;
 import com.bissonthomas.gamefarm.view.PlayPanel;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -13,6 +14,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class PlayState extends State {
 
@@ -26,18 +28,25 @@ public class PlayState extends State {
 
     private Player player;
 
-    private Map map;
+    private HashMap<String, Integer> hashMap_map_indexmap;
+    private ArrayList<Map> map;
     private int xMap=0, yMap=0;
 
-    private ArrayList<String> isMapAlreadyBought;
+    //TODO lA CLASSE EST TROP LONGUE ET INCOMPREHENSIBLE, ELLE VA SE SEPARER PLUS TARD
 
     public PlayState(StateManager sm, DBMongoConnection dbmc, String name, BufferedImage icon) {
         super(sm, dbmc);
         playPanel = new PlayPanel();
-        instantiateInitialMap();
+        //instantiateInitialMap();
+        instantiateMaps();
         instantiateInitialPlayer(name, icon);
     }
 
+    /**
+     * Instantiate the icon, the name, the purse and the starting seed of the player
+     * @param name
+     * @param icon
+     */
     public void instantiateInitialPlayer(String name, BufferedImage icon){
         player = new Player();
         player.addObserver(playPanel);
@@ -49,40 +58,69 @@ public class PlayState extends State {
             player.getBag().addPlant(Plant.jsonToPlant(startingPlants.get(i)));
     }
 
-    public void instantiateInitialMap() {
-        isMapAlreadyBought = new ArrayList<>();
+    public void instantiateMaps() {
+        map = new ArrayList<>();
+        hashMap_map_indexmap = new HashMap<>();
         ArrayList<JSONObject> allMaps = dbmc.getColectionIterableMap();
-        for(int i=0; i<allMaps.size(); i++)
-            isMapAlreadyBought.add(mapToString(allMaps.get(i)));
-        buyAMap(0,0);
+        for(int i=0; i<allMaps.size(); i++) {
+            try {
+                map.add(new Map(allMaps.get(i).getInt(DBMongoConnection.X_MAP), allMaps.get(i).getInt(DBMongoConnection.Y_MAP),
+                        allMaps.get(i).getInt(DBMongoConnection.PRICE_MAP), allMaps.get(i).getBoolean(DBMongoConnection.BOUGHT_AT_START_MAP)));
+                hashMap_map_indexmap.put(indiceToString(map.get(i).getIdX(), map.get(i).getIdY()), i);
 
-        map = new Map();
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        }
+
+        ArrayList<JSONObject> alGround, alFlowers;
+        JSONArray jsonArray;
+        String[] flowersName;
+        for(int i =0; i<allMaps.size(); i++) {
+            //get the ground for the map
+            alGround = dbmc.getColectionIterableGround(indiceToString(map.get(i).getIdX(), map.get(i).getIdY()));
+
+            //get the flowers for the map
+            jsonArray = allMaps.get(i).optJSONArray(DBMongoConnection.FLOWERS_MAP);
+            flowersName = new String[jsonArray.length()];
+            for(int j=0; j < jsonArray.length(); j++)
+                try {
+                    flowersName[j] = jsonArray.getString(j);
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            alFlowers = dbmc.getColectionFlowerIterable(false, flowersName);
+
+            //Putting the ground in the map
+            if(alGround != null) {
+                for (int j = 0; j < alGround.size(); j++) {
+                    map.get(i).addGround(Ground.jsonToGround(alGround.get(j), j));
+                    map.get(i).getALGround().get(j).addObserver(playPanel);
+                }
+            }
+
+            //Putting the flowers in the map
+            if(alFlowers != null) {
+                for (int j = 0; j < alFlowers.size(); j++)
+                    map.get(i).addPlant(Plant.jsonToPlant(alFlowers.get(j)));
+            }
+
+        }
+        buyAMap(xMap,yMap);
+        activateGrounds(xMap, yMap);
         changeMap();
     }
 
     public void changeMap() {
-        map.removeAllGroundAndPlant();
-        ArrayList<JSONObject> alTemp = dbmc.getColectionIterableGround(indiceToString());
-        if(alTemp != null) {
-            for (int i = 0; i < alTemp.size(); i++) {
-                map.addGround(Ground.jsonToGround(alTemp.get(i), i));
-                map.getALGround().get(i).addObserver(playPanel);
-            }
-            alTemp.clear();
-        }
-        alTemp = dbmc.getColectionFlowerIterable(false, indiceToString());
-        if(alTemp != null) {
-            for (int i = 0; i < alTemp.size(); i++)
-                map.addPlant(Plant.jsonToPlant(alTemp.get(i)));
-        }
-
         try {
             playPanel.setCurrentBackground(ImageIO.read(new File("maps/" + indiceToString() + ".png")));
         } catch (IOException e) {
             e.printStackTrace();
         }
-        playPanel.createGrounds(map);
 
+        //Create the images of the actual map and set a mouse listener to each of them
+        playPanel.createGrounds(map.get(hashMap_map_indexmap.get(indiceToString())));
+        activateGrounds(xMap, yMap);
         for(int i=0; i<playPanel.getGroundsImage().size(); i++){
             final int ii = i;
             playPanel.getGroundsImage().get(i).addMouseListener(new MouseListener() {
@@ -124,14 +162,17 @@ public class PlayState extends State {
             public void mouseClicked(MouseEvent e) {
                 super.mouseClicked(e);
                 if (! isMapAlreadyBought(xMap + 1, yMap)) {
+                    //TODO changer ça, faut utiliser une map de l'array list, plus un json object
                     JSONObject mapTemp = dbmc.getColectionIterableMap(xMap + 1, yMap);
                     boolean isOK = displayMessageBoxBuyAMap(mapTemp);
                     if(isOK){
                         buyAMap(xMap+1, yMap);
+                        desactivateGrounds(xMap, yMap);
                         xMap++;
                         changeMap();
                     }
                 } else {
+                    desactivateGrounds(xMap, yMap);
                     xMap++;
                     changeMap();
                 }
@@ -146,10 +187,12 @@ public class PlayState extends State {
                     boolean isOK = displayMessageBoxBuyAMap(mapTemp);
                     if(isOK){
                         buyAMap(xMap-1, yMap);
+                        desactivateGrounds(xMap, yMap);
                         xMap--;
                         changeMap();
                     }
                 } else {
+                    desactivateGrounds(xMap, yMap);
                     xMap--;
                     changeMap();
                 }
@@ -164,10 +207,12 @@ public class PlayState extends State {
                     boolean isOK = displayMessageBoxBuyAMap(mapTemp);
                     if(isOK){
                         buyAMap(xMap, yMap-1);
+                        desactivateGrounds(xMap, yMap);
                         yMap--;
                         changeMap();
                     }
                 } else {
+                    desactivateGrounds(xMap, yMap);
                     yMap--;
                     changeMap();
                 }
@@ -182,10 +227,12 @@ public class PlayState extends State {
                     boolean isOK = displayMessageBoxBuyAMap(mapTemp);
                     if(isOK){
                         buyAMap(xMap, yMap+1);
+                        desactivateGrounds(xMap, yMap);
                         yMap++;
                         changeMap();
                     }
                 } else {
+                    desactivateGrounds(xMap, yMap);
                     yMap++;
                     changeMap();
                 }
@@ -194,30 +241,23 @@ public class PlayState extends State {
     }
 
     public boolean displayMessageBoxBuyAMap(JSONObject mapTemp) {
-        JOptionPane jop = new JOptionPane();
         int option = 0;
         try {
-            option = jop.showConfirmDialog(null,
+            option = JOptionPane.showConfirmDialog(null,
+
                     "Price : " + mapTemp.getInt(DBMongoConnection.PRICE_MAP) +
                             "g\nDo you want to buy this map ?", "",
                     JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+
+            if (option == JOptionPane.OK_OPTION) {
+                if (player.getPurse() >= mapTemp.getInt(DBMongoConnection.PRICE_MAP)) {
+                    player.setPurse(player.getPurse() - mapTemp.getInt(DBMongoConnection.PRICE_MAP));
+                    return true;
+                } else
+                    JOptionPane.showMessageDialog(null, "You don't have enought money !", "Error", JOptionPane.ERROR_MESSAGE);
+            }
         } catch (JSONException e1) {
             e1.printStackTrace();
-        }
-        if (option == JOptionPane.OK_OPTION) {
-            try {
-                if (player.getPurse() >= mapTemp.getInt(DBMongoConnection.PRICE_MAP)) {
-                    try {
-                        player.setPurse(player.getPurse() - mapTemp.getInt(DBMongoConnection.PRICE_MAP));
-                    } catch (JSONException e1) { e1.printStackTrace(); }
-                    return true;
-                } else {
-                    JOptionPane jopAlert = new JOptionPane();
-                    jopAlert.showMessageDialog(null, "You don't have enought money !", "Error", JOptionPane.ERROR_MESSAGE);
-                }
-            } catch (JSONException e1) {
-                e1.printStackTrace();
-            }
         }
         return false;
     }
@@ -235,9 +275,9 @@ public class PlayState extends State {
         playPanel.getGroundChoicePanel().getbHarvest().addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if(map.getALGround().get(indiceGround).getPlant() != null) {
-                    if(map.getALGround().get(indiceGround).getPlant().getState() == Plant.PlantState.BIGPLANT) {
-                        Plant p = map.getALGround().get(indiceGround).harvestPlant();
+                if(map.get(hashMap_map_indexmap.get(indiceToString())).getALGround().get(indiceGround).getPlant() != null) {
+                    if(map.get(hashMap_map_indexmap.get(indiceToString())).getALGround().get(indiceGround).getPlant().getState() == Plant.PlantState.BIGPLANT) {
+                        Plant p = map.get(hashMap_map_indexmap.get(indiceToString())).getALGround().get(indiceGround).harvestPlant();
                         for (int i = 0; i < p.getNbHarvest(); i++) {
                             player.getBag().addPlant(Plant.clonePlant(p));
                         }
@@ -296,7 +336,8 @@ public class PlayState extends State {
         playPanel.getInventairePanel().getbClose().addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent event) {
                 playPanel.remove(playPanel.getInventairePanel());
-                playPanel.remove(playPanel.getGroundChoicePanel());
+                if(playPanel.getGroundChoicePanel() != null)
+                    playPanel.remove(playPanel.getGroundChoicePanel());
                 playPanel.setInventairePanel(null);
                 playPanel.setGroundChoicePanel(null);
                 playPanel.refresh();
@@ -314,8 +355,8 @@ public class PlayState extends State {
                         @Override
                         public void mouseReleased(MouseEvent e) {
                             //mettre une plante dans le ground et la retirer du sac
-                            if(map.getALGround().get(indiceGround).getPlant() == null)
-                                map.getALGround().get(indiceGround).addPlant(player.getBag().getPlantAndRemoveIt(player.getBag().plantNameInStack(yy * 5 + xx)));
+                            if(map.get(hashMap_map_indexmap.get(indiceToString())).getALGround().get(indiceGround).getPlant() == null)
+                                map.get(hashMap_map_indexmap.get(indiceToString())).getALGround().get(indiceGround).addPlant(player.getBag().getPlantAndRemoveIt(player.getBag().plantNameInStack(yy * 5 + xx)));
                             playPanel.remove(playPanel.getInventairePanel());
                             playPanel.remove(playPanel.getGroundChoicePanel());
                             playPanel.setInventairePanel(null);
@@ -345,30 +386,23 @@ public class PlayState extends State {
     }
 
     public String indiceToString() { return xMap + "," + yMap; }
-    public String mapToString(JSONObject json) {
-        try {
-            return "false," + json.getInt(DBMongoConnection.X_MAP) +","+json.getInt(DBMongoConnection.Y_MAP);
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
+    public String indiceToString(int x, int y) { return x + "," + y; }
+
     public boolean isMapAlreadyBought(int x, int y) {
-        for(int i=0; i<isMapAlreadyBought.size();i++) {
-            String[] s = isMapAlreadyBought.get(i).split(",");
-            if(x==Integer.parseInt(s[1]) && y==Integer.parseInt(s[2]) && Boolean.parseBoolean(s[0])) return true;
-        }
-        return false;
+        return map.get(hashMap_map_indexmap.get(indiceToString(x,y))).isAlreadyBought();
     }
     public void buyAMap(int x, int y) {
-        int indice = 0;
-        String[] s = null;
-        for(int i=0;i<isMapAlreadyBought.size(); i++) {
-            s = isMapAlreadyBought.get(i).split(",");
-            if(Integer.parseInt(s[1])==x && Integer.parseInt(s[2]) == y) indice = i;
+        map.get(hashMap_map_indexmap.get(indiceToString(x,y))).setAlreadyBought(true);
+    }
+    public void activateGrounds(int x, int y) {
+        for(int i=0; i<map.get(hashMap_map_indexmap.get(indiceToString(x,y))).getALGround().size(); i++) {
+            map.get(hashMap_map_indexmap.get(indiceToString(x, y))).getALGround().get(i).setDisplayed(true);
+            map.get(hashMap_map_indexmap.get(indiceToString(x, y))).getALGround().get(i).notifyTheObservers();
         }
-        s = isMapAlreadyBought.get(indice).split(",");
-        isMapAlreadyBought.set(indice,"true," + s[1] + "," + s[2]);
+    }
+    public void desactivateGrounds(int x, int y) {
+        for(int i=0; i<map.get(hashMap_map_indexmap.get(indiceToString(x,y))).getALGround().size(); i++)
+            map.get(hashMap_map_indexmap.get(indiceToString(x,y))).getALGround().get(i).setDisplayed(false);
     }
 
     @Override

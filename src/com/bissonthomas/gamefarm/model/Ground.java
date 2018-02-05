@@ -11,12 +11,14 @@ public class Ground extends Observable {
 
     private int x,y,indice;
     private Plant plant;
-    Timer timer = new Timer();
+    private Timer timer = new Timer();
+    private boolean isDisplayed;
 
     public Ground(int x, int y, int indice) {
         this.x = x;
         this.y = y;
         this.indice = indice;
+        isDisplayed = false;
     }
 
 
@@ -27,13 +29,15 @@ public class Ground extends Observable {
     public int getY() { return y; }
     public void setY(int y) { this.y = y; }
 
+    public boolean isDisplayed() { return isDisplayed; }
+    public void setDisplayed(boolean displayed) { isDisplayed = displayed; }
+
     public Plant getPlant() { return plant; }
     public void addPlant(Plant _plant) {
         if(plant==null) {
             this.plant = _plant;
             this.plant.setState(Plant.PlantState.SEED);
-            setChanged();
-            notifyObservers(plant);
+            notifyTheObservers();
             setTimer();
         }
     }
@@ -41,15 +45,12 @@ public class Ground extends Observable {
         if(plant!=null) {
             Plant p = plant;
             plant = null;
-            setChanged();
-            notifyObservers(plant);
+            notifyTheObservers();
             return p;
         }
         return null;
     }
-    public void removePlant() {
 
-    }
 
     public int getIndice() { return indice; }
     public void setIndice(int indice) { this.indice = indice; }
@@ -61,21 +62,25 @@ public class Ground extends Observable {
             public void run() {
                 if(plant.getState() == Plant.PlantState.SEED) {
                     plant.setState(Plant.PlantState.LITTLEPLANT);
-                    setChanged();
-                    notifyObservers(plant);
+                    notifyTheObservers();
                     setTimer();
                 } else if(plant.getState() == Plant.PlantState.LITTLEPLANT) {
                     plant.setState(Plant.PlantState.PLANT);
-                    setChanged();
-                    notifyObservers(plant);
+                    notifyTheObservers();
                     setTimer();
                 } else if(plant.getState() == Plant.PlantState.PLANT) {
                     plant.setState(Plant.PlantState.BIGPLANT);
-                    setChanged();
-                    notifyObservers(plant);
+                    notifyTheObservers();
                 }
             }
         }, plant.getGrowTime()/4);
+    }
+
+    public void notifyTheObservers() {
+        if(isDisplayed) {
+            setChanged();
+            notifyObservers(plant);
+        }
     }
 
     public static Ground jsonToGround(JSONObject json, int indice) {
