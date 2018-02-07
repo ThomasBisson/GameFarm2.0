@@ -3,7 +3,8 @@ package com.bissonthomas.gamefarm.view;
 import com.bissonthomas.gamefarm.model.*;
 import com.bissonthomas.gamefarm.view.hud.HUD;
 import com.bissonthomas.gamefarm.view.playgame.GroundChoicePanel;
-import com.bissonthomas.gamefarm.view.playgame.InventairePanel;
+import com.bissonthomas.gamefarm.view.playgame.InventoryPanel;
+import com.bissonthomas.gamefarm.view.playgame.ShopPanel;
 
 import javax.imageio.ImageIO;
 import javax.swing.*;
@@ -27,7 +28,8 @@ public class PlayPanel extends JLayeredPane implements Observer {
     private JLabel lArrowEast, lArrowWest, lArrowSouth, lArrowNorth;
 
     private HUD hud;
-    private InventairePanel inventairePanel;
+    private InventoryPanel inventoryPanel;
+    private ShopPanel shopPanel;
     private GroundChoicePanel groundChoicePanel;
 
     private ArrayList<JLabel> groundsImage;
@@ -147,10 +149,18 @@ public class PlayPanel extends JLayeredPane implements Observer {
     }
 
     public void displayInventory(Player player, int x, int y) {
-        if(inventairePanel!=null)
-            remove(inventairePanel);
-        inventairePanel = new InventairePanel(player, x,y);
-        add(inventairePanel,new Integer(1));
+        if(inventoryPanel !=null)
+            remove(inventoryPanel);
+        inventoryPanel = new InventoryPanel(player, x,y);
+        add(inventoryPanel,new Integer(1));
+        refresh();
+    }
+
+    public void displayShop(int x, int y, ArrayList<Plant> plants, Player player) {
+        if(shopPanel != null)
+            remove(shopPanel);
+        shopPanel = new ShopPanel(x,y,plants, player);
+        add(shopPanel, new Integer(1));
         refresh();
     }
 
@@ -195,6 +205,7 @@ public class PlayPanel extends JLayeredPane implements Observer {
                 }
             }
         }
+        refresh();
     }
 
     public void refresh() {
@@ -203,8 +214,10 @@ public class PlayPanel extends JLayeredPane implements Observer {
     }
 
     public HUD getHud() { return hud; }
-    public InventairePanel getInventairePanel() { return inventairePanel; }
-    public void setInventairePanel(InventairePanel inventairePanel) { this.inventairePanel = inventairePanel; }
+    public InventoryPanel getInventoryPanel() { return inventoryPanel; }
+    public void setInventoryPanel(InventoryPanel inventoryPanel) { this.inventoryPanel = inventoryPanel; }
+    public ShopPanel getShopPanel() { return shopPanel; }
+    public void setShopPanel(ShopPanel shopPanel) { this.shopPanel = shopPanel; }
     public ArrayList<JLabel> getGroundsImage() { return groundsImage; }
     public GroundChoicePanel getGroundChoicePanel() { return groundChoicePanel; }
     public void setGroundChoicePanel(GroundChoicePanel groundChoicePanel) { this.groundChoicePanel = groundChoicePanel; }

@@ -93,6 +93,18 @@ public class Bag {
         return 99;
     }
 
+    public int howManyStacksNoEmptyStacks() {
+        int j = 0;
+        for(int i=0; i<listPlant.length; i++) {
+            if(!isStackEmpty(i))
+                j++;
+            else
+                break;
+        }
+        return j;
+
+    }
+
     public String plantNameInStack(int stack) { return listPlant[stack][0].getName(); }
 
     public Plant[][] getArrayPlant(){

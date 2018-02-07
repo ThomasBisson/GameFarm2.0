@@ -21,7 +21,7 @@ public class HUD {
         bBag = new JButton("Inv");
         bBag.setBounds(600,600, 50,50);
         bShop = new JButton("Shop");
-        bShop.setBounds(500,600, 50,50);
+        bShop.setBounds(500,600, 70,50);
     }
 
     public HUD(JPanel panel, String name, BufferedImage icon, int purse) {

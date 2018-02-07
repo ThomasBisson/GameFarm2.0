@@ -9,7 +9,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 
-public class InventairePanel extends JPanel {
+public class InventoryPanel extends JPanel {
 
     public final int HeightViewPanelInventory = 220;
     public final int WidthViewPanelInventory = 275;
@@ -22,7 +22,7 @@ public class InventairePanel extends JPanel {
     private JButton bClose;
 
 
-    public InventairePanel(Player player, int x, int y) {
+    public InventoryPanel(Player player, int x, int y) {
         this.player = player;
 
         this.setLayout(null);
@@ -58,7 +58,7 @@ public class InventairePanel extends JPanel {
             for (int j = 0; j < arrayImagePlants[0].length; j++) {
                 arrayImagePlants[i][j] = new JLabel();
                 if (! this.player.getBag().isStackEmpty(i * 5 + j)) {
-                    //TODO il manque les images
+                    //TODO il manque les descriptions
                     arrayImagePlants[i][j].setIcon(new ImageIcon("imagesPlantes/" + this.player.getBag().getArrayPlant()[i * 5 + j][0].getName() + ".png"));
                     pInventory.add(arrayImagePlants[i][j]);
                     lNumberOfPlantInStack = new JLabel("" + this.player.getBag().howMuchInStack(i * 5 + j));

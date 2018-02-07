@@ -19,9 +19,10 @@ import java.util.HashMap;
 public class PlayState extends State {
 
     public final int xInventory = 500;
-    public final int yInventory = 350;
+    public final int yInventory = 323;
 
     public final int xShop = 50;
+    public final int yShop = 143;
 
 
     private PlayPanel playPanel;
@@ -153,7 +154,8 @@ public class PlayState extends State {
         playPanel.getHud().getbShop().addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                //
+                playPanel.displayShop(xShop, yShop, map.get(hashMap_map_indexmap.get(indiceToString())).getPlantInShop(), player);
+                initShop();
             }
         });
 
@@ -263,7 +265,6 @@ public class PlayState extends State {
     }
 
 
-
     public void initGroundChoice(int indiceGround) {
         playPanel.getGroundChoicePanel().getbPlant().addActionListener(new ActionListener() {
             @Override
@@ -292,18 +293,18 @@ public class PlayState extends State {
     }
 
     public void initInventory() {
-        playPanel.getInventairePanel().getbClose().addActionListener(new ActionListener() {
+        playPanel.getInventoryPanel().getbClose().addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent event) {
-                playPanel.remove(playPanel.getInventairePanel());
-                playPanel.setInventairePanel(null);
+                playPanel.remove(playPanel.getInventoryPanel());
+                playPanel.setInventoryPanel(null);
                 playPanel.refresh();
             }
         });
-        for(int y=0; y<playPanel.getInventairePanel().getArrayImagePlants().length; y++) {
-            for(int x=0; x<playPanel.getInventairePanel().getArrayImagePlants()[0].length; x++) {
+        for(int y = 0; y<playPanel.getInventoryPanel().getArrayImagePlants().length; y++) {
+            for(int x = 0; x<playPanel.getInventoryPanel().getArrayImagePlants()[0].length; x++) {
                 final int yy = y; final int xx = x;
-                if(playPanel.getInventairePanel().getArrayImagePlants()[y][x].getIcon() != null) {
-                    playPanel.getInventairePanel().getArrayImagePlants()[y][x].addMouseListener(new MouseListener() {
+                if(playPanel.getInventoryPanel().getArrayImagePlants()[y][x].getIcon() != null) {
+                    playPanel.getInventoryPanel().getArrayImagePlants()[y][x].addMouseListener(new MouseListener() {
                         @Override
                         public void mouseClicked(MouseEvent e) { }
                         @Override
@@ -312,14 +313,14 @@ public class PlayState extends State {
                         public void mouseReleased(MouseEvent e) { }
                         @Override
                         public void mouseEntered(MouseEvent e) {
-                            playPanel.getInventairePanel().getArrayImagePlants()[yy][xx].setIcon(
+                            playPanel.getInventoryPanel().getArrayImagePlants()[yy][xx].setIcon(
                                     new ImageIcon("imagesPlantes/" +
                                             player.getBag().getArrayPlant()[yy * 5 + xx][0].getName() +
                                             "Selected.png"));
                         }
                         @Override
                         public void mouseExited(MouseEvent e) {
-                            playPanel.getInventairePanel().getArrayImagePlants()[yy][xx].setIcon(
+                            playPanel.getInventoryPanel().getArrayImagePlants()[yy][xx].setIcon(
                                     new ImageIcon("imagesPlantes/" +
                                             player.getBag().getArrayPlant()[yy * 5 + xx][0].getName() +
                                             ".png"));
@@ -333,21 +334,21 @@ public class PlayState extends State {
     }
 
     public void initInventoryPlantIntoGround(final int indiceGround) {
-        playPanel.getInventairePanel().getbClose().addActionListener(new ActionListener() {
+        playPanel.getInventoryPanel().getbClose().addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent event) {
-                playPanel.remove(playPanel.getInventairePanel());
+                playPanel.remove(playPanel.getInventoryPanel());
                 if(playPanel.getGroundChoicePanel() != null)
                     playPanel.remove(playPanel.getGroundChoicePanel());
-                playPanel.setInventairePanel(null);
+                playPanel.setInventoryPanel(null);
                 playPanel.setGroundChoicePanel(null);
                 playPanel.refresh();
             }
         });
-        for(int y=0; y<playPanel.getInventairePanel().getArrayImagePlants().length; y++) {
-            for(int x=0; x<playPanel.getInventairePanel().getArrayImagePlants()[0].length; x++) {
+        for(int y = 0; y<playPanel.getInventoryPanel().getArrayImagePlants().length; y++) {
+            for(int x = 0; x<playPanel.getInventoryPanel().getArrayImagePlants()[0].length; x++) {
                 final int yy = y; final int xx = x;
-                if(playPanel.getInventairePanel().getArrayImagePlants()[y][x].getIcon() != null) {
-                    playPanel.getInventairePanel().getArrayImagePlants()[y][x].addMouseListener(new MouseListener() {
+                if(playPanel.getInventoryPanel().getArrayImagePlants()[y][x].getIcon() != null) {
+                    playPanel.getInventoryPanel().getArrayImagePlants()[y][x].addMouseListener(new MouseListener() {
                         @Override
                         public void mouseClicked(MouseEvent e) { }
                         @Override
@@ -357,22 +358,22 @@ public class PlayState extends State {
                             //mettre une plante dans le ground et la retirer du sac
                             if(map.get(hashMap_map_indexmap.get(indiceToString())).getALGround().get(indiceGround).getPlant() == null)
                                 map.get(hashMap_map_indexmap.get(indiceToString())).getALGround().get(indiceGround).addPlant(player.getBag().getPlantAndRemoveIt(player.getBag().plantNameInStack(yy * 5 + xx)));
-                            playPanel.remove(playPanel.getInventairePanel());
+                            playPanel.remove(playPanel.getInventoryPanel());
                             playPanel.remove(playPanel.getGroundChoicePanel());
-                            playPanel.setInventairePanel(null);
+                            playPanel.setInventoryPanel(null);
                             playPanel.setGroundChoicePanel(null);
                             playPanel.refresh();
                         }
                         @Override
                         public void mouseEntered(MouseEvent e) {
-                            playPanel.getInventairePanel().getArrayImagePlants()[yy][xx].setIcon(
+                            playPanel.getInventoryPanel().getArrayImagePlants()[yy][xx].setIcon(
                                     new ImageIcon("imagesPlantes/" +
                                             player.getBag().getArrayPlant()[yy * 5 + xx][0].getName() +
                                             "Selected.png"));
                         }
                         @Override
                         public void mouseExited(MouseEvent e) {
-                            playPanel.getInventairePanel().getArrayImagePlants()[yy][xx].setIcon(
+                            playPanel.getInventoryPanel().getArrayImagePlants()[yy][xx].setIcon(
                                     new ImageIcon("imagesPlantes/" +
                                             player.getBag().getArrayPlant()[yy * 5 + xx][0].getName() +
                                             ".png"));
@@ -382,6 +383,41 @@ public class PlayState extends State {
                     });
                 }
             }
+        }
+    }
+
+    public void initShop(){
+        playPanel.getShopPanel().getbClose().addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                playPanel.remove(playPanel.getShopPanel());
+                playPanel.setShopPanel(null);
+                playPanel.refresh();
+            }
+        });
+        for(int i=0; i<playPanel.getShopPanel().getShopCasesBuy().size(); i++) {
+            final int ii = i;
+            playPanel.getShopPanel().getShopCasesBuy().get(i).getB_buy().addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    if (player.getPurse() >= playPanel.getShopPanel().getShopCasesBuy().get(ii).getPlant().getPrice()) {
+                        player.setPurse(player.getPurse() - playPanel.getShopPanel().getShopCasesBuy().get(ii).getPlant().getPrice());
+                        player.getBag().addPlant(playPanel.getShopPanel().getShopCasesBuy().get(ii).getPlant());
+                    }
+                }
+            });
+        }
+        for(int i=0; i<playPanel.getShopPanel().getShopCasesSell().size(); i++) {
+            final int ii = i;
+            playPanel.getShopPanel().getShopCasesSell().get(i).getB_buy().addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    player.setPurse(player.getPurse() + playPanel.getShopPanel().getShopCasesSell().get(ii).getPrice());
+                    player.getBag().removePlant(playPanel.getShopPanel().getShopCasesSell().get(ii).getPlant().getName());
+                    //playPanel.getShopPanel().instantiateShopCasesSell(player);
+                    //playPanel.getShopPanel().refresh();
+                }
+            });
         }
     }
 
